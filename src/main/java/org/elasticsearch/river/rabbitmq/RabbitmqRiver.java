@@ -68,6 +68,8 @@ public class RabbitmqRiver extends AbstractRiverComponent implements River {
     private final boolean rabbitExchangeDeclare;
     private final boolean rabbitQueueDurable;
     private final boolean rabbitQueueAutoDelete;
+    private final int rabbitQosPrefetchSize;
+    private final int rabbitQosPrefetchCount;
     private Map rabbitQueueArgs = null; //extra arguments passed to queue for creation (ha settings for example)
 
     private final int bulkSize;
@@ -136,9 +138,12 @@ public class RabbitmqRiver extends AbstractRiverComponent implements River {
             }
             rabbitQueueBind = XContentMapValues.nodeBooleanValue(rabbitSettings.get("queue_bind"), true);
 
-           
-            
-            
+            rabbitQosPrefetchSize = XContentMapValues.nodeIntegerValue(rabbitSettings.get("qos_prefetch_size"), 0);
+            rabbitQosPrefetchCount = XContentMapValues.nodeIntegerValue(rabbitSettings.get("qos_prefetch_count"), 10);
+
+            rabbitHeartbeat = TimeValue.parseTimeValue(XContentMapValues.nodeStringValue(
+                    rabbitSettings.get("heartbeat"), "30m"), TimeValue.timeValueMinutes(30));
+
         } else {
             rabbitAddresses = new Address[]{ new Address("localhost", AMQP.PROTOCOL.PORT) };
             rabbitUser = "guest";
@@ -156,6 +161,10 @@ public class RabbitmqRiver extends AbstractRiverComponent implements River {
             rabbitExchangeDeclare = true;
             rabbitQueueDeclare = true;
             rabbitQueueBind = true;
+            rabbitQosPrefetchSize = 0;
+            rabbitQosPrefetchCount = 10;
+
+            rabbitHeartbeat = TimeValue.timeValueMinutes(30);
         }
 
         if (settings.settings().containsKey("index")) {
@@ -284,6 +293,7 @@ public class RabbitmqRiver extends AbstractRiverComponent implements River {
                         // only bind queue if we should
                         channel.queueBind(rabbitQueue/*queue*/, rabbitExchange/*exchange*/, rabbitRoutingKey/*routingKey*/);
                     }
+                    channel.basicQos(rabbitQosPrefetchSize/*qos_prefetch_size*/, rabbitQosPrefetchCount/*qos_prefetch_count*/, false);
                     channel.basicConsume(rabbitQueue/*queue*/, false/*noAck*/, consumer);
                 } catch (Exception e) {
                     if (!closed) {
