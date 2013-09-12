@@ -141,9 +141,6 @@ public class RabbitmqRiver extends AbstractRiverComponent implements River {
             rabbitQosPrefetchSize = XContentMapValues.nodeIntegerValue(rabbitSettings.get("qos_prefetch_size"), 0);
             rabbitQosPrefetchCount = XContentMapValues.nodeIntegerValue(rabbitSettings.get("qos_prefetch_count"), 10);
 
-            rabbitHeartbeat = TimeValue.parseTimeValue(XContentMapValues.nodeStringValue(
-                    rabbitSettings.get("heartbeat"), "30m"), TimeValue.timeValueMinutes(30));
-
         } else {
             rabbitAddresses = new Address[]{ new Address("localhost", AMQP.PROTOCOL.PORT) };
             rabbitUser = "guest";
@@ -163,8 +160,6 @@ public class RabbitmqRiver extends AbstractRiverComponent implements River {
             rabbitQueueBind = true;
             rabbitQosPrefetchSize = 0;
             rabbitQosPrefetchCount = 10;
-
-            rabbitHeartbeat = TimeValue.timeValueMinutes(30);
         }
 
         if (settings.settings().containsKey("index")) {
